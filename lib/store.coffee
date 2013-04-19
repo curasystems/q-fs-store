@@ -1,4 +1,5 @@
 path = require('path')
+stream = require('stream')
 
 _ = require('underscore')
 mkdirp = require('mkdirp')
@@ -17,6 +18,24 @@ module.exports.NoMatchingPackage = class NoMatchingPackage extends Error
 module.exports.MissingPackageError = class MissingPackageError extends Error
     constructor: (@details)->super(@details)
 
+class StorageStream extends stream.Transform
+
+    constructor: (@store, @packageInfo, @packageStoragePath)->
+        super()
+
+    _transform: (chunk,encoding,callback)->
+        @push(chunk)
+        callback()
+
+    _flush: (callback)->
+        @store._storeInfo @packageInfo, @packageStoragePath, (err)=>
+            return callback(err) if err
+            @push(null)
+            callback(null)
+
+    emitCloseEvent: ()->
+        @emit 'close'
+        
 class FileSystemPackageStore
 
     DEFAULT_OPTIONS=
@@ -30,19 +49,31 @@ class FileSystemPackageStore
         
 
     store: (info, data, callback)->
+
+        if _.isFunction(data)
+            callback = data
+            data = null
+
         packageStoragePath = @_buildStoragePathFromInfo(info)
         
         @_createDirectoryForFile packageStoragePath, (err)=>
             return callback(err) if err
 
+            targetStream = fs.createWriteStream packageStoragePath
+
+            storageStream = new StorageStream(this,info,packageStoragePath)
+            storageStream.pipe(targetStream)
+            targetStream.on 'close', ->storageStream.emitCloseEvent()
+                
             if Buffer.isBuffer(data)
-                @_storeBuffer data, packageStoragePath, (err)=>
-                    return callback(err) if err
-                    @_storeInfo info, packageStoragePath, callback
+                writeError = null
+                storageStream.end data
+                targetStream.on 'error', (error)->
+                    writeError = error
+                targetStream.on 'close', ()->
+                    callback(writeError)
             else
-                @_storeStream data, packageStoragePath,(err)=>
-                    return callback(err) if err
-                    @_storeInfo info, packageStoragePath, callback                
+                callback(null,storageStream)                    
 
     _buildStoragePathFromInfo: (info)->
         return @_buildStoragePathFromUid(info.uid)
@@ -53,18 +84,6 @@ class FileSystemPackageStore
 
     _createDirectoryForFile: (filePath, callback)->
         mkdirp path.dirname(filePath), callback
-
-    _storeBuffer: (buffer, targetPath, callback)->
-        fs.writeFile targetPath, buffer, callback
-
-    _storeStream: (stream, targetPath, callback)->
-        writeError = null
-
-        target = fs.createWriteStream targetPath
-        stream.pipe(target)
-        target.on 'error', (error)->
-            writeError = error
-        target.on 'close', ()->callback(writeError)
 
     _storeInfo: (info, packageStoragePath, callback)->
 

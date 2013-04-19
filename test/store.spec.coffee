@@ -1,9 +1,9 @@
 qStore = require('../lib/store')
 
 fs = require('fs')
-streamBuffers = require('stream-buffers')
 wrench = require('wrench')
 _ = require('underscore')
+streamBuffers = require('stream-buffers')
 
 {expect} = require('./testing')
 
@@ -126,9 +126,9 @@ describe 'starting it', ->
     storeTestPackageStream = (version, callback)->        
         data = new Buffer([10,20,30,40,50,60])
         
-        stream = new streamBuffers.ReadableStreamBuffer()
-        stream.put(data)
-
         TEST_PACKAGE_INFO.version = version
         TEST_PACKAGE_INFO.data = data
-        s.store TEST_PACKAGE_INFO, stream, callback
+        
+        s.store TEST_PACKAGE_INFO, (err,storageStream)->
+            storageStream.on 'close', callback
+            storageStream.end(data)
