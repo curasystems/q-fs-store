@@ -58,13 +58,69 @@ describe 'starting it', ->
                 versions.should.contain( TEST_PACKAGE_INFO.version )
                 done()
 
-    #describe 'find '
-    #   it 'can find the hig'
+    describe 'finding packages', ->
 
+        beforeEach (done)->
+            storeTestPackage '1.0.0', ->
+                storeTestPackage '1.1.0', ->
+                    storeTestPackage '2.1.0', done
+
+        it 'can find the all matching versions of a package', (done)->
+            s.findMatching TEST_PACKAGE_INFO.name, '~1', (err,matchingVersions)->
+                matchingVersions.length.should.equal 2
+                matchingVersions.should.contain '1.0.0'
+                matchingVersions.should.contain '1.1.0'
+                done()
+
+        it 'can find the highest matching version of a package', (done)->
+            s.findHighest TEST_PACKAGE_INFO.name, '~1', (err,highest)->
+                highest.should.equal '1.1.0'
+                done()
+
+        it 'if not match exists raise an error', (done)->
+            s.findHighest TEST_PACKAGE_INFO.name, '>2.2', (err,highest)->
+                err.should.be.instanceof( qStore.NoMatchingPackage )
+                done()
+
+    describe 'downloading packages', ->
+        
+        beforeEach (done)->
+            storeTestPackage '1.3.4', ->
+               done()
+
+        it 'is possible by asking for uid', (done)->
+            retrievePackage TEST_PACKAGE_INFO.uid, done
+
+        it 'returns the data as stored', (done)->
+            retrievePackage TEST_PACKAGE_INFO.uid, (err,data)->
+                data.should.deep.equal( TEST_PACKAGE_INFO.data )
+                done()
+
+        it 'is also possible to ask via name and version match', (done)->
+            retrievePackage TEST_PACKAGE_INFO.name + '@' + '~1.3.0', (err,data)->
+                data.should.deep.equal( TEST_PACKAGE_INFO.data )
+                done()
+
+        it 'if not such match exists raise an error', (done)->
+            retrievePackage TEST_PACKAGE_INFO.name + '@' + '~2.3.0', (err,data)->
+                err.should.be.instanceof( qStore.NoMatchingPackage )
+                done()
+
+        retrievePackage = (identifier,callback)->
+            s.readPackage identifier, (err,packageStream)->     
+                return callback(err) if err
+
+                target = new streamBuffers.WritableStreamBuffer()
+                packageStream.pipe(target)
+                packageStream.on 'end', ()->
+                    retrievedBuffer = target.getContents()
+                    callback(null,retrievedBuffer)
+                    
     storeTestPackage = (version, callback)->        
         data = new Buffer([10,20,30,40,50,60])
 
         TEST_PACKAGE_INFO.version = version
+        TEST_PACKAGE_INFO.data = data
         s.store TEST_PACKAGE_INFO, data, callback
 
     storeTestPackageStream = (version, callback)->        
@@ -74,4 +130,5 @@ describe 'starting it', ->
         stream.put(data)
 
         TEST_PACKAGE_INFO.version = version
+        TEST_PACKAGE_INFO.data = data
         s.store TEST_PACKAGE_INFO, stream, callback

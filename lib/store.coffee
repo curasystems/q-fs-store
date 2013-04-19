@@ -5,12 +5,17 @@ mkdirp = require('mkdirp')
 glob = require('glob')
 semver = require('semver')
 
+module.exports = (options)->
+    return new FileSystemPackageStore(options)
+
 module.exports.InvalidVersionError = class InvalidVersionError extends Error
     constructor: (@details)->super(@details)
 
+module.exports.NoMatchingPackage = class NoMatchingPackage extends Error
+    constructor: (@details)->super(@details)
 
-module.exports = (options)->
-    return new FileSystemPackageStore(options)
+module.exports.MissingPackageError = class MissingPackageError extends Error
+    constructor: (@details)->super(@details)
 
 class FileSystemPackageStore
 
@@ -40,7 +45,10 @@ class FileSystemPackageStore
                     @_storeInfo info, packageStoragePath, callback                
 
     _buildStoragePathFromInfo: (info)->
-        relativePath = path.join( info.uid.substr(0,2), info.uid + '.pkg' )
+        return @_buildStoragePathFromUid(info.uid)
+
+    _buildStoragePathFromUid: (uid)->
+        relativePath = path.join( uid.substr(0,2), uid + '.pkg' )
         fullPath = path.join(@objectDirectory, relativePath)
 
     _createDirectoryForFile: (filePath, callback)->
@@ -62,16 +70,19 @@ class FileSystemPackageStore
 
         return callback(new InvalidVersionError(info.version)) unless semver.valid(info.version)
 
-        refPath = path.join( @refDirectory, info.name, info.version + '.json' )
+        refPath = @_buildRefPath( info.name, info.version )
     
         @_createDirectoryForFile refPath, (err)=>
             return callback(err) if err
 
             packageReference = _.clone(info)
-            packageReference.path = path.relative(@options.path, packageStoragePath)
+            packageReference.path = path.relative(@objectDirectory, packageStoragePath)
 
             fs.writeFile refPath, JSON.stringify(packageReference, null,' '), callback
 
+    _buildRefPath: (name,version)->
+        path.join( @refDirectory, name, version + '.json' )
+    
     listRaw: (callback)->
         glob '**/*.pkg', cwd:@objectDirectory, (err,packages)->
             return callback(err) if err
@@ -101,7 +112,51 @@ class FileSystemPackageStore
             versions = (path.basename(infoPath, '.json') for infoPath in refs)
             callback(null, versions)
 
+    findMatching: (packageName, versionMatch, callback)->
+        @listVersions packageName, (err,versions)->
+            return callback(err) if err
 
+            matchingVersions = _.filter versions, (v)->semver.satisfies(v,versionMatch)
 
+            callback(null,matchingVersions)    
 
-    
+    findHighest: (packageName, versionMatch, callback)->
+        @findMatching packageName, versionMatch, (err,versions)->
+            return callback(err) if err
+
+            highestMatch = semver.maxSatisfying versions, versionMatch
+
+            if not highestMatch
+                return callback(new NoMatchingPackage(packageName+'@'+versionMatch))
+            else
+                callback(null,highestMatch)
+
+    readPackage: (packageIdentifier, callback)->
+
+        if packageIdentifier.indexOf('@')>0
+            [name,versionMatch] = packageIdentifier.split('@')
+            @findHighest name, versionMatch, (err,version)=>
+                return callback(err) if err
+                @_lookupPackagePath name, version, (err, packagePath)=>
+                    return callback(err) if err
+                    @_returnPackage packagePath, callback        
+        else
+            packagePath = @_buildStoragePathFromUid(packageIdentifier)
+            @_returnPackage packagePath, callback
+
+    _lookupPackagePath: (name,version,callback)->
+        refPath = @_buildRefPath(name,version)
+        fs.readFile refPath, encoding:'utf8', (err,data)=>
+            return callback(err) if err
+            
+            refInfo = JSON.parse(data)
+            packagePath = path.join(@objectDirectory, refInfo.path)
+            callback(null,packagePath)
+
+    _returnPackage: (packagePath, callback)->
+        fs.exists packagePath, (exists)=>
+            if(exists)
+                return callback(null,fs.createReadStream(packagePath))
+            else
+                return callback(new MissingPackageError(packagePath))
+            
