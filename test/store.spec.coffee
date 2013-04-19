@@ -27,18 +27,18 @@ describe 'starting it', ->
         expect(s).to.not.be.undefined
         expect(s).to.not.be.null
 
-    describe 'storing a packet', ->
+    describe 'saving a packet', ->
 
         it 'can store packages from buffers with package info', (done)->
-            storeTestPackage('1.0.0', done)        
+            saveTestPackage('1.0.0', done)        
 
         it 'can store packages from streams with package info', (done)->
-            storeTestPackageStream('1.0.0', done)        
+            saveTestPackageStream('1.0.0', done)        
 
     describe 'listing packages', ->
         
         beforeEach (done)->
-            storeTestPackage '1.0.0', done
+            saveTestPackage '1.0.0', done
             
         it 'can list all stored packages by uid', (done)->
             s.listRaw (err,packageList)->
@@ -61,9 +61,9 @@ describe 'starting it', ->
     describe 'finding packages', ->
 
         beforeEach (done)->
-            storeTestPackage '1.0.0', ->
-                storeTestPackage '1.1.0', ->
-                    storeTestPackage '2.1.0', done
+            saveTestPackage '1.0.0', ->
+                saveTestPackage '1.1.0', ->
+                    saveTestPackage '2.1.0', done
 
         it 'can find the all matching versions of a package', (done)->
             s.findMatching TEST_PACKAGE_INFO.name, '~1', (err,matchingVersions)->
@@ -85,7 +85,7 @@ describe 'starting it', ->
     describe 'downloading packages', ->
         
         beforeEach (done)->
-            storeTestPackage '1.3.4', ->
+            saveTestPackage '1.3.4', ->
                done()
 
         it 'is possible by asking for uid', (done)->
@@ -116,19 +116,19 @@ describe 'starting it', ->
                     retrievedBuffer = target.getContents()
                     callback(null,retrievedBuffer)
                     
-    storeTestPackage = (version, callback)->        
+    saveTestPackage = (version, callback)->        
         data = new Buffer([10,20,30,40,50,60])
 
         TEST_PACKAGE_INFO.version = version
         TEST_PACKAGE_INFO.data = data
-        s.store TEST_PACKAGE_INFO, data, callback
+        s.writePackage TEST_PACKAGE_INFO, data, callback
 
-    storeTestPackageStream = (version, callback)->        
+    saveTestPackageStream = (version, callback)->        
         data = new Buffer([10,20,30,40,50,60])
         
         TEST_PACKAGE_INFO.version = version
         TEST_PACKAGE_INFO.data = data
         
-        s.store TEST_PACKAGE_INFO, (err,storageStream)->
+        s.writePackage TEST_PACKAGE_INFO, (err,storageStream)->
             storageStream.on 'close', callback
             storageStream.end(data)

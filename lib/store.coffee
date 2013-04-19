@@ -48,7 +48,7 @@ class FileSystemPackageStore
         @objectDirectory = path.join(@options.path, 'objects')
         
 
-    store: (info, data, callback)->
+    writePackage: (info, data, callback)->
 
         if _.isFunction(data)
             callback = data
