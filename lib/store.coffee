@@ -1,4 +1,5 @@
 path = require('path')
+fs = require('fs')
 stream = require('stream')
 
 _ = require('underscore')
