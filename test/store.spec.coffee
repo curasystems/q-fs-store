@@ -1,6 +1,7 @@
 qStore = require('../lib/store')
 
 fs = require('fs')
+streamBuffers = require('stream-buffers')
 wrench = require('wrench')
 _ = require('underscore')
 
@@ -30,6 +31,9 @@ describe 'starting it', ->
 
         it 'can store packages from buffers with package info', (done)->
             storeTestPackage('1.0.0', done)        
+
+        it 'can store packages from streams with package info', (done)->
+            storeTestPackageStream('1.0.0', done)        
 
     describe 'listing packages', ->
         
@@ -62,3 +66,12 @@ describe 'starting it', ->
 
         TEST_PACKAGE_INFO.version = version
         s.store TEST_PACKAGE_INFO, data, callback
+
+    storeTestPackageStream = (version, callback)->        
+        data = new Buffer([10,20,30,40,50,60])
+        
+        stream = new streamBuffers.ReadableStreamBuffer()
+        stream.put(data)
+
+        TEST_PACKAGE_INFO.version = version
+        s.store TEST_PACKAGE_INFO, stream, callback

@@ -8,6 +8,7 @@ semver = require('semver')
 module.exports.InvalidVersionError = class InvalidVersionError extends Error
     constructor: (@details)->super(@details)
 
+
 module.exports = (options)->
     return new FileSystemPackageStore(options)
 
@@ -30,11 +31,13 @@ class FileSystemPackageStore
             return callback(err) if err
 
             if Buffer.isBuffer(data)
-                return @_storeBuffer data, packageStoragePath, (err)=>
+                @_storeBuffer data, packageStoragePath, (err)=>
                     return callback(err) if err
                     @_storeInfo info, packageStoragePath, callback
-
-            callback('dont understand data')
+            else
+                @_storeStream data, packageStoragePath,(err)=>
+                    return callback(err) if err
+                    @_storeInfo info, packageStoragePath, callback                
 
     _buildStoragePathFromInfo: (info)->
         relativePath = path.join( info.uid.substr(0,2), info.uid + '.pkg' )
@@ -45,6 +48,15 @@ class FileSystemPackageStore
 
     _storeBuffer: (buffer, targetPath, callback)->
         fs.writeFile targetPath, buffer, callback
+
+    _storeStream: (stream, targetPath, callback)->
+        writeError = null
+
+        target = fs.createWriteStream targetPath
+        stream.pipe(target)
+        target.on 'error', (error)->
+            writeError = error
+        target.on 'close', ()->callback(writeError)
 
     _storeInfo: (info, packageStoragePath, callback)->
 
@@ -88,6 +100,8 @@ class FileSystemPackageStore
 
             versions = (path.basename(infoPath, '.json') for infoPath in refs)
             callback(null, versions)
+
+
 
 
     
