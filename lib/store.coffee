@@ -125,7 +125,7 @@ class FileSystemPackageStore
     listVersions: (packageName, callback)->
         packageRefsDirectory = path.join(@refDirectory, packageName)
 
-        glob '**/*.json', cwd:@refDirectory, (err,refs)=>
+        glob '**/*.json', cwd:packageRefsDirectory, (err,refs)=>
             return callback(err) if err
 
             versions = (path.basename(infoPath, '.json') for infoPath in refs)
