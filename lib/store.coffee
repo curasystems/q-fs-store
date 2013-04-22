@@ -151,19 +151,23 @@ class FileSystemPackageStore
             else
                 callback(null,highestMatch)
 
-    readPackage: (packageIdentifier, callback)->
+    getPackageStoragePath: (packageIdentifier, callback)->
 
         if packageIdentifier.indexOf('@')>0
             [name,versionMatch] = packageIdentifier.split('@')
             @findHighest name, versionMatch, (err,version)=>
                 return callback(err) if err
-                @_lookupPackagePath name, version, (err, packagePath)=>
-                    return callback(err) if err
-                    @_returnPackage packagePath, callback        
+                @_lookupPackagePath name, version, callback
         else
             packagePath = @_buildStoragePathFromUid(packageIdentifier)
-            @_returnPackage packagePath, callback
+            @_lookupPackagePath name, version, callback
 
+    readPackage: (packageIdentifier, callback)->
+
+        @getPackageStoragePath packageIdentifier, (err,packagePath)=>
+            return callback(err) if err
+            @_returnPackage packagePath, callback        
+        
     _lookupPackagePath: (name,version,callback)->
         refPath = @_buildRefPath(name,version)
         fs.readFile refPath, encoding:'utf8', (err,data)=>
