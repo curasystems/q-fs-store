@@ -160,7 +160,7 @@ class FileSystemPackageStore
                 @_lookupPackagePath name, version, callback
         else
             packagePath = @_buildStoragePathFromUid(packageIdentifier)
-            @_lookupPackagePath name, version, callback
+            callback(null,packagePath)
 
     readPackage: (packageIdentifier, callback)->
 
