@@ -175,6 +175,7 @@ class FileSystemPackageStore
             
             refInfo = JSON.parse(data)
             packagePath = path.join(@objectDirectory, refInfo.path)
+
             callback(null,packagePath)
 
     _returnPackage: (packagePath, callback)->
