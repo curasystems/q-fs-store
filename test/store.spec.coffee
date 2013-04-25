@@ -52,12 +52,20 @@ describe 'starting it', ->
                 list[0].version.should.equal( TEST_PACKAGE_INFO.version )
                 done()
 
-          it 'can list all versions of a package', (done)->
+        it 'can get package information on a specific package version', (done)->
+            s.getInfo TEST_PACKAGE_INFO.name, TEST_PACKAGE_INFO.version, (err,info)->
+                expect(info).to.not.be.undefined
+                info.name.should.equal( TEST_PACKAGE_INFO.name )
+                info.version.should.equal( TEST_PACKAGE_INFO.version )
+                info.uid.should.equal( TEST_PACKAGE_INFO.uid )
+                done()
+
+        it 'can list all versions of a package', (done)->
             s.listVersions TEST_PACKAGE_INFO.name, (err,versions)->
                 expect(versions).to.not.be.undefined
                 versions.should.contain( TEST_PACKAGE_INFO.version )
                 done()
-
+        
     describe 'finding packages', ->
 
         beforeEach (done)->

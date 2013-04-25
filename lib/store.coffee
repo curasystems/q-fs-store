@@ -132,6 +132,14 @@ class FileSystemPackageStore
             versions = (path.basename(infoPath, '.json') for infoPath in refs)
             callback(null, versions)
 
+    getInfo: (packageName, version, callback)->
+
+        refPath = @_buildRefPath(packageName,version)
+        fs.readFile refPath, encoding:'utf8', (err,content)=>
+            return callback(err) if err
+            
+            callback( null, JSON.parse(content) )
+
     findMatching: (packageName, versionMatch, callback)->
 
         if _.isArray(versionMatch)
