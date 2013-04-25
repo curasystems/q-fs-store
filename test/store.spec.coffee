@@ -62,15 +62,22 @@ describe 'starting it', ->
 
         beforeEach (done)->
             saveTestPackage '1.0.0', ->
-                saveTestPackage '1.1.0', ->
-                    saveTestPackage '2.1.0', done
+                saveTestPackage '1.1.0-beta.1', ->
+                    saveTestPackage '1.1.0', ->
+                        saveTestPackage '2.1.0', done
 
         it 'can find the all matching versions of a package', (done)->
             s.findMatching TEST_PACKAGE_INFO.name, '~1', (err,matchingVersions)->
-                matchingVersions.length.should.equal 2
+                matchingVersions.length.should.equal 3
                 matchingVersions.should.contain '1.0.0'
                 matchingVersions.should.contain '1.1.0'
+                matchingVersions.should.contain '1.1.0-beta.1'
                 done()
+
+        it 'can find the highest available version compared to a list', (done)->
+            s.findHighest TEST_PACKAGE_INFO.name, ['1.0.0','1.1.0'], (err, matchingVersion)->
+                matchingVersion.should.equal '1.1.0'
+                done()                
 
         it 'can find the highest matching version of a package', (done)->
             s.findHighest TEST_PACKAGE_INFO.name, '~1', (err,highest)->

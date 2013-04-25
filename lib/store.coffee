@@ -133,6 +133,10 @@ class FileSystemPackageStore
             callback(null, versions)
 
     findMatching: (packageName, versionMatch, callback)->
+
+        if _.isArray(versionMatch)
+            versionMatch = versionMatch.join('||')
+
         @listVersions packageName, (err,versions)->
             return callback(err) if err
 
@@ -141,6 +145,10 @@ class FileSystemPackageStore
             callback(null,matchingVersions)    
 
     findHighest: (packageName, versionMatch, callback)->
+
+        if _.isArray(versionMatch)
+            versionMatch = versionMatch.join('||')
+
         @findMatching packageName, versionMatch, (err,versions)->
             return callback(err) if err
 
