@@ -65,7 +65,7 @@ describe 'starting it', ->
                 saveTestPackage '1.1.0', ->
                     saveTestPackage '2.1.0', done
 
-        it.only 'can find the all matching versions of a package', (done)->
+        it 'can find the all matching versions of a package', (done)->
             s.findMatching TEST_PACKAGE_INFO.name, '~1', (err,matchingVersions)->
                 matchingVersions.length.should.equal 2
                 matchingVersions.should.contain '1.0.0'
