@@ -146,18 +146,36 @@ class FileSystemPackageStore
 
     findHighest: (packageName, versionMatch, callback)->
 
-        if _.isArray(versionMatch)
-            versionMatch = versionMatch.join('||')
-
-        @findMatching packageName, versionMatch, (err,versions)->
+        @findMatching packageName, versionMatch, (err,versions)=>
             return callback(err) if err
 
-            highestMatch = semver.maxSatisfying versions, versionMatch
+            highestMatch = @highestVersionOf(versions)
 
             if not highestMatch
                 return callback(new NoMatchingPackage(packageName+'@'+versionMatch))
             else
                 callback(null,highestMatch)
+
+    highestVersionOf: (versions)->
+        if versions.length == 0 
+            return null
+
+        highestMatch = _.reduce versions, (prev,next)->
+            return next if not prev
+            return next if semver.gt(next,prev)
+            return prev
+
+    removeHighestVersion: (versions)->
+
+        highest = @highestVersionOf(versions)  
+        filtered = (v for v in versions when v isnt highest)
+        return filtered
+
+    findSecondHighestMatchingVersion: (versionsA,versionB)->
+
+        identicalVersions = _.intersection versionsA,versionB
+        filtered = @removeHighestVersion(identicalVersions)
+        return @highestVersionOf(filtered)
 
     getPackageStoragePath: (packageIdentifier, callback)->
 

@@ -89,6 +89,19 @@ describe 'starting it', ->
                 err.should.be.instanceof( qStore.NoMatchingPackage )
                 done()
 
+        it 'offers a way to simply retrieve the highest version in an array of versions', ->
+            version = s.highestVersionOf ['1.1.0','1.1.0-beta1','1.0.0']
+            version.should.equal('1.1.0')
+
+        it 'offers a way to create a list of versions with the highest version removed', ->
+            version = s.removeHighestVersion ['1.1.0','1.1.0-beta1','1.0.0', '3.2.0']
+            version.should.not.include('3.2.0')            
+
+        it 'can find the second to highest version contained in two lists', ->
+            version = s.findSecondHighestMatchingVersion ['1.0.0','1.1.0-beta1','1.1.0','2.0.0','3.2.0'],['1.0.4','2.0.0','3.2.0']
+            version.should.equal '2.0.0'
+            
+
     describe 'retrieving packages', ->
         
         beforeEach (done)->
