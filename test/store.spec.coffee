@@ -117,24 +117,24 @@ describe 'starting it', ->
                done()
 
         it 'is possible by asking for uid', (done)->
-            retrievePackage TEST_PACKAGE_INFO.uid, done
+            readPackage TEST_PACKAGE_INFO.uid, done
 
         it 'returns the data as stored', (done)->
-            retrievePackage TEST_PACKAGE_INFO.uid, (err,data)->
+            readPackage TEST_PACKAGE_INFO.uid, (err,data)->
                 data.should.deep.equal( TEST_PACKAGE_INFO.data )
                 done()
 
         it 'is also possible to ask via name and version match', (done)->
-            retrievePackage TEST_PACKAGE_INFO.name + '@' + '~1.3.0', (err,data)->
+            readPackage TEST_PACKAGE_INFO.name + '@' + '~1.3.0', (err,data)->
                 data.should.deep.equal( TEST_PACKAGE_INFO.data )
                 done()
 
         it 'if not such match exists raise an error', (done)->
-            retrievePackage TEST_PACKAGE_INFO.name + '@' + '~2.3.0', (err,data)->
+            readPackage TEST_PACKAGE_INFO.name + '@' + '~2.3.0', (err,data)->
                 err.should.be.instanceof( qStore.NoMatchingPackage )
                 done()
 
-        retrievePackage = (identifier,callback)->
+        readPackage = (identifier,callback)->
             s.readPackage identifier, (err,packageStream)->     
                 return callback(err) if err
 
