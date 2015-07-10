@@ -208,6 +208,9 @@ class FileSystemPackageStore
             return callback(err) if err
             
             refInfo = JSON.parse(data)
+            
+            refInfo.path = refInfo.path.replace(/\\/g,'/')
+            
             packagePath = path.join(@objectDirectory, refInfo.path)
 
             callback(null,packagePath)
